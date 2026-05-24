@@ -1,0 +1,6 @@
+data/*.db
+*.db
+task-manager.exe
+task-manager.exe~
+*.exe
+tmp/
