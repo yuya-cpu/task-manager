@@ -15,14 +15,22 @@ type mockAssignmentRepository struct {
 	assignments []models.Assignment
 }
 
-func (m *mockAssignmentRepository) FindAllByUserID(userID uint) ([]models.Assignment, error) {
+func (m *mockAssignmentRepository) FindByUserID(userID uint, filter dto.AssignmentListFilter) ([]models.Assignment, int64, error) {
 	var result []models.Assignment
 	for _, a := range m.assignments {
-		if a.UserID == userID {
-			result = append(result, a)
+		if a.UserID != userID {
+			continue
 		}
+		if filter.Status != "" && a.Status != filter.Status {
+			continue
+		}
+		if filter.Priority != "" && a.Priority != filter.Priority {
+			continue
+		}
+		result = append(result, a)
 	}
-	return result, nil
+	total := int64(len(result))
+	return result, total, nil
 }
 
 func (m *mockAssignmentRepository) FindByIDForUser(id, userID uint) (models.Assignment, error) {
@@ -91,6 +99,31 @@ func TestAssignmentService_UpdateStatus(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, models.StatusDone, updated.Status)
+}
+
+func TestAssignmentService_FindAllFilter(t *testing.T) {
+	repo := &mockAssignmentRepository{
+		assignments: []models.Assignment{
+			{ID: 1, UserID: 1, Title: "A", Status: models.StatusTodo, Priority: models.PriorityHigh},
+			{ID: 2, UserID: 1, Title: "B", Status: models.StatusDone, Priority: models.PriorityLow},
+		},
+	}
+	service := NewAssignmentService(repo)
+
+	filter := dto.DefaultAssignmentListFilter()
+	filter.Status = models.StatusTodo
+
+	result, err := service.FindAll(1, filter)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), result.Meta.Total)
+	assert.Len(t, result.Items, 1)
+	assert.Equal(t, "A", result.Items[0].Title)
+}
+
+func TestAssignmentListFilter_Validate(t *testing.T) {
+	filter := dto.DefaultAssignmentListFilter()
+	filter.Status = "invalid"
+	assert.Error(t, filter.Validate())
 }
 
 func TestParseDueDate(t *testing.T) {

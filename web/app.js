@@ -98,10 +98,27 @@ async function signup() {
   }
 }
 
+function buildListQuery() {
+  const params = new URLSearchParams();
+  const status = document.getElementById("filter-status")?.value;
+  const priority = document.getElementById("filter-priority")?.value;
+  const sort = document.getElementById("filter-sort")?.value;
+  if (status) params.set("status", status);
+  if (priority) params.set("priority", priority);
+  if (sort) params.set("sort", sort);
+  const qs = params.toString();
+  return qs ? `/assignments?${qs}` : "/assignments";
+}
+
 async function loadTasks() {
   taskList.innerHTML = "";
+  const listMeta = document.getElementById("list-meta");
+  if (listMeta) listMeta.textContent = "";
   try {
-    const data = await api("/assignments");
+    const data = await api(buildListQuery());
+    if (listMeta && data.meta) {
+      listMeta.textContent = `全 ${data.meta.total} 件（${data.meta.page} ページ目 / ${data.meta.limit} 件表示）`;
+    }
     if (!data.data.length) {
       taskList.innerHTML = "<li>タスクがありません</li>";
       return;
@@ -197,6 +214,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   showAuth();
 });
 document.getElementById("task-form").addEventListener("submit", createTask);
+document.getElementById("filter-btn").addEventListener("click", loadTasks);
 
 taskList.addEventListener("click", (event) => {
   const button = event.target.closest("button");

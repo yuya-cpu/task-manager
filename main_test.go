@@ -92,9 +92,15 @@ func TestAssignmentsCRUD(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var listResp map[string][]models.Assignment
+	var listResp struct {
+		Data []models.Assignment `json:"data"`
+		Meta struct {
+			Total int64 `json:"total"`
+		} `json:"meta"`
+	}
 	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &listResp))
-	assert.Len(t, listResp["data"], 1)
+	assert.Len(t, listResp.Data, 1)
+	assert.Equal(t, int64(1), listResp.Meta.Total)
 
 	done := models.StatusDone
 	updateBody, _ := json.Marshal(dto.UpdateAssignmentInput{Status: &done})
@@ -114,6 +120,46 @@ func TestAssignmentsCRUD(t *testing.T) {
 	var count int64
 	db.Model(&models.Assignment{}).Count(&count)
 	assert.Equal(t, int64(0), count)
+}
+
+func TestAssignmentsFilter(t *testing.T) {
+	router, _ := setupTestRouter(t)
+
+	token, err := services.CreateToken(1, "test@example.com")
+	assert.NoError(t, err)
+
+	create := func(title, status, priority string) {
+		body, _ := json.Marshal(dto.CreateAssignmentInput{
+			Title:    title,
+			Status:   status,
+			Priority: priority,
+		})
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/assignments", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusCreated, w.Code)
+	}
+
+	create("Todo task", models.StatusTodo, models.PriorityHigh)
+	create("Done task", models.StatusDone, models.PriorityLow)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/assignments?status=todo", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var listResp struct {
+		Data []models.Assignment `json:"data"`
+		Meta struct {
+			Total int64 `json:"total"`
+		} `json:"meta"`
+	}
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &listResp))
+	assert.Equal(t, int64(1), listResp.Meta.Total)
+	assert.Equal(t, "Todo task", listResp.Data[0].Title)
 }
 
 func TestAssignmentsUnauthorized(t *testing.T) {

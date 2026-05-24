@@ -78,8 +78,8 @@ func main() {
 func seedDemoUser(authService services.AuthService, assignmentService services.AssignmentService) {
 	_ = authService.SignUp("demo@example.com", "password123")
 
-	assignments, err := assignmentService.FindAll(1)
-	if err != nil || len(assignments) > 0 {
+	result, err := assignmentService.FindAll(1, dto.DefaultAssignmentListFilter())
+	if err != nil || result.Meta.Total > 0 {
 		return
 	}
 

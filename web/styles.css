@@ -67,6 +67,15 @@ button.secondary {
   gap: 8px;
 }
 
+.filters {
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 8px;
+}
+
+.filters button {
+  align-self: end;
+}
+
 .hidden {
   display: none;
 }

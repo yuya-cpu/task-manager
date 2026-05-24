@@ -8,8 +8,13 @@ import (
 	"task-manager/repositories"
 )
 
+type AssignmentListOutput struct {
+	Items []models.Assignment
+	Meta  dto.ListMeta
+}
+
 type AssignmentService interface {
-	FindAll(userID uint) ([]models.Assignment, error)
+	FindAll(userID uint, filter dto.AssignmentListFilter) (AssignmentListOutput, error)
 	FindByID(id, userID uint) (models.Assignment, error)
 	Create(userID uint, input dto.CreateAssignmentInput) (models.Assignment, error)
 	Update(id, userID uint, input dto.UpdateAssignmentInput) (models.Assignment, error)
@@ -24,8 +29,27 @@ func NewAssignmentService(repository repositories.AssignmentRepository) Assignme
 	return &assignmentService{repository: repository}
 }
 
-func (s *assignmentService) FindAll(userID uint) ([]models.Assignment, error) {
-	return s.repository.FindAllByUserID(userID)
+func (s *assignmentService) FindAll(userID uint, filter dto.AssignmentListFilter) (AssignmentListOutput, error) {
+	if err := filter.Validate(); err != nil {
+		return AssignmentListOutput{}, err
+	}
+	if filter.Sort == "" {
+		filter.Sort = dto.SortDueDateAsc
+	}
+
+	items, total, err := s.repository.FindByUserID(userID, filter)
+	if err != nil {
+		return AssignmentListOutput{}, err
+	}
+
+	return AssignmentListOutput{
+		Items: items,
+		Meta: dto.ListMeta{
+			Page:  filter.Page,
+			Limit: filter.Limit,
+			Total: total,
+		},
+	}, nil
 }
 
 func (s *assignmentService) FindByID(id, userID uint) (models.Assignment, error) {
