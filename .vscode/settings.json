@@ -1,0 +1,9 @@
+{
+  "go.toolsManagement.autoUpdate": true,
+  "gopls": {
+    "build.directoryFilters": ["-web", "-tmp"]
+  },
+  "files.watcherExclude": {
+    "**/data/*.db": true
+  }
+}

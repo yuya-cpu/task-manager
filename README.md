@@ -233,6 +233,18 @@ failed to connect to the docker API ...
 
 → `docker-compose.yml` の `ports` を `"8081:8080"` などに変更するか、既存プロセスを停止してください。
 
+### エディターに赤線が大量に出る
+
+`gin 1` フォルダ内に `gin-fleamarket` のコピーが複数あると、Go 言語サーバー（gopls）が同じモジュール名を重複認識してエラーになります。
+
+**対処:**
+
+1. Cursor / VS Code を **ウィンドウごと再読み込み**（`Developer: Reload Window`）
+2. `gin 1/go.work` でメインの `./gin-fleamarket` だけを見る設定済み
+3. 使わないコピー（`gin-fleamarket 1` など）はフォルダごと削除するか、ワークスペースから外す
+
+`task-manager` は単独モジュールのため `task-manager/go.work` を配置済みです。
+
 ### DB スキーマエラー（ローカル `go run` 時）
 
 古い SQLite ファイルが原因のことがあります。
