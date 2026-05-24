@@ -1,5 +1,6 @@
 data/*.db
 *.db
+.env
 task-manager.exe
 task-manager.exe~
 *.exe

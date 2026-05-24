@@ -9,11 +9,11 @@ import (
 )
 
 type AssignmentService interface {
-	FindAll() ([]models.Assignment, error)
-	FindByID(id uint) (models.Assignment, error)
-	Create(input dto.CreateAssignmentInput) (models.Assignment, error)
-	Update(id uint, input dto.UpdateAssignmentInput) (models.Assignment, error)
-	Delete(id uint) error
+	FindAll(userID uint) ([]models.Assignment, error)
+	FindByID(id, userID uint) (models.Assignment, error)
+	Create(userID uint, input dto.CreateAssignmentInput) (models.Assignment, error)
+	Update(id, userID uint, input dto.UpdateAssignmentInput) (models.Assignment, error)
+	Delete(id, userID uint) error
 }
 
 type assignmentService struct {
@@ -24,15 +24,15 @@ func NewAssignmentService(repository repositories.AssignmentRepository) Assignme
 	return &assignmentService{repository: repository}
 }
 
-func (s *assignmentService) FindAll() ([]models.Assignment, error) {
-	return s.repository.FindAll()
+func (s *assignmentService) FindAll(userID uint) ([]models.Assignment, error) {
+	return s.repository.FindAllByUserID(userID)
 }
 
-func (s *assignmentService) FindByID(id uint) (models.Assignment, error) {
-	return s.repository.FindByID(id)
+func (s *assignmentService) FindByID(id, userID uint) (models.Assignment, error) {
+	return s.repository.FindByIDForUser(id, userID)
 }
 
-func (s *assignmentService) Create(input dto.CreateAssignmentInput) (models.Assignment, error) {
+func (s *assignmentService) Create(userID uint, input dto.CreateAssignmentInput) (models.Assignment, error) {
 	dueDate, err := parseDueDate(input.DueDate)
 	if err != nil {
 		return models.Assignment{}, err
@@ -44,6 +44,7 @@ func (s *assignmentService) Create(input dto.CreateAssignmentInput) (models.Assi
 	}
 
 	assignment := models.Assignment{
+		UserID:      userID,
 		Title:       input.Title,
 		Description: input.Description,
 		DueDate:     dueDate,
@@ -53,8 +54,8 @@ func (s *assignmentService) Create(input dto.CreateAssignmentInput) (models.Assi
 	return s.repository.Create(assignment)
 }
 
-func (s *assignmentService) Update(id uint, input dto.UpdateAssignmentInput) (models.Assignment, error) {
-	assignment, err := s.repository.FindByID(id)
+func (s *assignmentService) Update(id, userID uint, input dto.UpdateAssignmentInput) (models.Assignment, error) {
+	assignment, err := s.repository.FindByIDForUser(id, userID)
 	if err != nil {
 		return models.Assignment{}, err
 	}
@@ -82,8 +83,8 @@ func (s *assignmentService) Update(id uint, input dto.UpdateAssignmentInput) (mo
 	return s.repository.Update(assignment)
 }
 
-func (s *assignmentService) Delete(id uint) error {
-	return s.repository.Delete(id)
+func (s *assignmentService) Delete(id, userID uint) error {
+	return s.repository.DeleteForUser(id, userID)
 }
 
 func parseDueDate(value *string) (*time.Time, error) {

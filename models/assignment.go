@@ -19,6 +19,7 @@ const (
 // Assignment はタスク（課題）を表すモデルです。
 type Assignment struct {
 	ID          uint       `json:"id" gorm:"primaryKey"`
+	UserID      uint       `json:"user_id" gorm:"not null;index"`
 	Title       string     `json:"title" gorm:"not null"`
 	Description string     `json:"description"`
 	DueDate     *time.Time `json:"due_date"`

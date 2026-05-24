@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Task Manager</h1>
+      <p class="subtitle">Gin + SQLite + JWT</p>
+    </header>
+
+    <section id="auth-section" class="card">
+      <h2>ログイン / 新規登録</h2>
+      <form id="auth-form">
+        <label>
+          メール
+          <input type="email" id="email" required placeholder="demo@example.com" />
+        </label>
+        <label>
+          パスワード（8文字以上）
+          <input type="password" id="password" required placeholder="password123" />
+        </label>
+        <div class="row">
+          <button type="button" id="login-btn">ログイン</button>
+          <button type="button" id="signup-btn" class="secondary">新規登録</button>
+        </div>
+      </form>
+      <p class="hint">デモ: demo@example.com / password123</p>
+      <p id="auth-message" class="message"></p>
+    </section>
+
+    <section id="app-section" class="hidden">
+      <div class="toolbar card">
+        <span id="user-label"></span>
+        <button type="button" id="logout-btn" class="secondary">ログアウト</button>
+      </div>
+
+      <section class="card">
+        <h2>タスクを追加</h2>
+        <form id="task-form">
+          <label>タイトル <input type="text" id="title" required /></label>
+          <label>説明 <input type="text" id="description" /></label>
+          <label>期限 <input type="date" id="due-date" /></label>
+          <label>
+            優先度
+            <select id="priority">
+              <option value="low">low</option>
+              <option value="medium" selected>medium</option>
+              <option value="high">high</option>
+            </select>
+          </label>
+          <label>
+            ステータス
+            <select id="status">
+              <option value="todo">todo</option>
+              <option value="in_progress">in_progress</option>
+              <option value="done">done</option>
+            </select>
+          </label>
+          <button type="submit">追加</button>
+        </form>
+        <p id="task-message" class="message"></p>
+      </section>
+
+      <section class="card">
+        <h2>タスク一覧</h2>
+        <ul id="task-list"></ul>
+      </section>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

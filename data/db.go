@@ -18,9 +18,18 @@ func SetupDB() *gorm.DB {
 	if dbPath == "" {
 		dbPath = defaultDBPath
 	}
+	return openDB(dbPath, true)
+}
 
-	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-		log.Fatalf("failed to create db directory: %v", err)
+func SetupTestDB() *gorm.DB {
+	return openDB(":memory:", false)
+}
+
+func openDB(dbPath string, ensureDir bool) *gorm.DB {
+	if ensureDir && dbPath != ":memory:" {
+		if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+			log.Fatalf("failed to create db directory: %v", err)
+		}
 	}
 
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
@@ -28,7 +37,7 @@ func SetupDB() *gorm.DB {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&models.Assignment{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Assignment{}); err != nil {
 		log.Fatalf("failed to migrate: %v", err)
 	}
 

@@ -1,22 +1,27 @@
 # task-manager
 
-Gin と SQLite で作る、シンプルなタスク管理 REST API です。  
-タスク（Assignment）の作成・一覧・更新・削除ができ、**期限・優先度・ステータス** を扱えます。
+Gin と SQLite で作るタスク管理アプリです。  
+REST API に **JWT 認証** を加え、同梱の **Web フロント** からタスクを操作できます。
 
 ## 機能
 
-- タスク（Assignment）の CRUD
-- 期限（`due_date`）・優先度（`priority`）・ステータス（`status`）
-- SQLite への永続化（ファイル: `data/task-manager.db`）
-- 初回起動時のサンプルデータ投入
+- ユーザー登録・ログイン（JWT）
+- タスク（Assignment）の CRUD（ログインユーザーごとに分離）
+- 期限・優先度・ステータス
+- SQLite 永続化
+- 単体テスト・API 統合テスト
+- 簡易 Web UI（HTML + JavaScript）
 
 ## 技術スタック
 
 | 用途 | ライブラリ |
 |------|------------|
-| Web フレームワーク | [Gin](https://github.com/gin-gonic/gin) |
-| ORM | [GORM](https://gorm.io/) |
-| DB | SQLite（[glebarez/sqlite](https://github.com/glebarez/sqlite)・CGO 不要） |
+| API | Gin |
+| ORM | GORM |
+| DB | SQLite（glebarez/sqlite・CGO 不要） |
+| 認証 | JWT（golang-jwt） |
+| テスト | testify + httptest |
+| フロント | 静的 HTML / CSS / JS |
 
 ## 必要環境
 
@@ -27,71 +32,101 @@ Gin と SQLite で作る、シンプルなタスク管理 REST API です。
 ```bash
 git clone https://github.com/yuya-cpu/task-manager.git
 cd task-manager
+cp .env.example .env   # SECRET_KEY を本番用に変更
 go mod download
 go run .
 ```
 
-起動後: `http://127.0.0.1:8080`
+- API: http://127.0.0.1:8080  
+- フロント: http://127.0.0.1:8080/web/index.html  
+
+### デモアカウント
+
+| 項目 | 値 |
+|------|-----|
+| Email | `demo@example.com` |
+| Password | `password123` |
+
+## テスト
+
+```bash
+go test ./...
+```
 
 ## API
 
-ベース URL: `http://127.0.0.1:8080`
+### 認証（トークン不要）
 
 | メソッド | パス | 説明 |
 |----------|------|------|
-| GET | `/assignments` | 一覧取得 |
+| POST | `/auth/signup` | 新規登録 |
+| POST | `/auth/login` | ログイン（`token` を返す） |
+
+### タスク（要 `Authorization: Bearer <token>`）
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| GET | `/assignments` | 一覧 |
 | GET | `/assignments/:id` | 1件取得 |
 | POST | `/assignments` | 作成 |
 | PUT | `/assignments/:id` | 更新 |
 | DELETE | `/assignments/:id` | 削除 |
 
-### フィールド
+### タスクフィールド
 
-| フィールド | 型 | 説明 |
-|------------|-----|------|
-| `title` | string | タイトル（必須） |
-| `description` | string | 説明 |
-| `due_date` | string | 期限（`YYYY-MM-DD`、省略可） |
-| `priority` | string | `low` / `medium` / `high` |
-| `status` | string | `todo` / `in_progress` / `done` |
+| フィールド | 説明 |
+|------------|------|
+| `title` | タイトル（必須） |
+| `description` | 説明 |
+| `due_date` | `YYYY-MM-DD` |
+| `priority` | `low` / `medium` / `high` |
+| `status` | `todo` / `in_progress` / `done` |
 
-### 作成例
-
-```bash
-curl -X POST http://127.0.0.1:8080/assignments \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"レポート提出\",\"description\":\"第3章まで\",\"due_date\":\"2026-06-01\",\"priority\":\"high\",\"status\":\"todo\"}"
-```
-
-### 更新例
+### curl 例
 
 ```bash
-curl -X PUT http://127.0.0.1:8080/assignments/1 \
+# ログイン
+curl -X POST http://127.0.0.1:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"status\":\"done\"}"
+  -d "{\"email\":\"demo@example.com\",\"password\":\"password123\"}"
+
+# 一覧（TOKEN を差し替え）
+curl http://127.0.0.1:8080/assignments \
+  -H "Authorization: Bearer TOKEN"
 ```
 
 ## プロジェクト構成
 
 ```
 task-manager/
-├── main.go                 # 起動・ルーティング・シード
-├── data/db.go              # DB 接続・マイグレーション
-├── models/assignment.go    # データモデル
-├── dto/assignment_dto.go   # リクエスト用 DTO
-├── handlers/assignment.go  # HTTP ハンドラ
-├── services/               # ビジネスロジック
-└── repositories/           # DB アクセス
+├── main.go
+├── main_test.go
+├── data/
+├── models/          # User, Assignment
+├── dto/
+├── handlers/        # Auth, Assignment
+├── services/
+├── repositories/
+├── middlewares/     # JWT 認証
+└── web/             # フロント（静的ファイル）
 ```
-
-**Handler → Service → Repository** の3層構成です（`gin-fleamarket` と同じ考え方）。
 
 ## 環境変数
 
 | 変数 | デフォルト | 説明 |
 |------|------------|------|
-| `DB_PATH` | `data/task-manager.db` | SQLite ファイルのパス |
+| `SECRET_KEY` | （開発用フォールバックあり） | JWT 署名キー |
+| `DB_PATH` | `data/task-manager.db` | SQLite パス |
+
+## 注意
+
+スキーマ変更後に起動エラーになる場合は、古い DB ファイルを削除して再起動してください。
+
+```bash
+rm data/task-manager.db   # Windows: del data\task-manager.db
+go run .
+```
 
 ## ライセンス
 
-MIT（必要に応じて変更してください）
+MIT
